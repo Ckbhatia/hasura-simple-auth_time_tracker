@@ -8,11 +8,16 @@ const typeDefs = gql`
     me: User!
   }
   type Mutation {
-    signup(email: String, password: String): AuthPayload!
-    login(email: String, password: String): AuthPayload!
+    signup(name: String!, username: String!, email: String!, password: String!): AuthPayload!
+    login(email: String!, password: String!): LoginOutput!
   }
   type AuthPayload {
     token: String
+  }
+  type LoginOutput { 
+    token: String
+    email: String
+    username: String
   }
   type User {
     email: String

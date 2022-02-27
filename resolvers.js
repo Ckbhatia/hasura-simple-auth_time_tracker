@@ -11,14 +11,26 @@ const graphql = new GraphQLClient(process.env.ENDPOINT, {
 })
 
 const LOGIN = `
-  query($email: String) {
-    user(where:{email: {_eq: $email}}) { id password }
+  query($email: String!) {
+    users(where: {email: {_eq: $email}}) {
+      id,
+      email,
+      username,
+      password
+    }
   }
 `
 
 const SIGNUP = `
-  mutation($email: String, $password: String) {
-    insert_user(objects: { email: $email, password: $password }) { returning { id }}
+  mutation ($name: String!, $username: String!, $email: String!, $password: String!) {
+    insert_users(objects: {email: $email, password: $password, name: $name, username: $username}) {
+      returning {
+        id
+        username
+        email
+        name
+      }
+    }
   }
 `
 
@@ -42,27 +54,27 @@ const resolvers = {
     }
   },
   Mutation: {
-    signup: async (_, { email, password }) => {
+    signup: async (_, { email, password, name, username}) => {
       const hashedPassword = await bcrypt.hash(password, 10)
 
-      const user = await graphql.request(SIGNUP, { email, password: hashedPassword }).then(data => {
-        return data.insert_user.returning[0]
+      const user = await graphql.request(SIGNUP, { email, password: hashedPassword, name, username }).then(data => {
+        return data.insert_users.returning[0]
       })
 
       const token = jwt.sign({
         userId: user.id,
         'https://hasura.io/jwt/claims': {
-          'x-hasura-user-id': user.id,
-          'x-hasura-default-role': 'user',
-          'x-hasura-allowed-roles': ['user']
+          'x-hasura-user-id': `${user.id}`,
+          'x-hasura-default-role': "user",
+          'x-hasura-allowed-roles': ["user"]
         }
-      }, process.env.JWT_SECRET)
+      }, process.env.JWT_SECRET);
 
-      return { token }
+      return { id: user.id, name: user.name, username: user.username, email: user.email, token }
     },
     login: async (_, { email, password }) => {
       const user = await graphql.request(LOGIN, { email }).then(data => {
-        return data.user[0]
+        return data.users[0];
       })
 
       if (!user) throw new Error('No such user found.')
@@ -73,13 +85,13 @@ const resolvers = {
         const token = jwt.sign({
           userId: user.id,
           'https://hasura.io/jwt/claims': {
-            'x-hasura-user-id': user.id,
+            'x-hasura-user-id': `${user.id}`,
             'x-hasura-default-role': 'user',
             'x-hasura-allowed-roles': ['user']
           }
         }, process.env.JWT_SECRET)
 
-        return { token }
+        return { email: user.email, username: user.username, token }
       } else {
         throw new Error('Invalid password.')
       }
