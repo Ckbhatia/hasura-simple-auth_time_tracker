@@ -70,7 +70,7 @@ const resolvers = {
         }
       }, process.env.JWT_SECRET);
 
-      return { id: user.id, name: user.name, username: user.username, email: user.email, token }
+      return { id: user.id, token }
     },
     login: async (_, { email, password }) => {
       const user = await graphql.request(LOGIN, { email }).then(data => {
@@ -91,7 +91,7 @@ const resolvers = {
           }
         }, process.env.JWT_SECRET)
 
-        return { email: user.email, username: user.username, token }
+        return { id: user.id, token }
       } else {
         throw new Error('Invalid password.')
       }
