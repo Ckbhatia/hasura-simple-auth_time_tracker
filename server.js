@@ -3,6 +3,8 @@ const { resolvers } = require('./resolvers')
 
 const { getUserId } = require('./utils')
 
+require('dotenv').config()
+
 const typeDefs = gql`
   type Query {
     me: User!
@@ -24,6 +26,10 @@ const typeDefs = gql`
 `
 
 const server = new ApolloServer({
+  cors: {
+		origin: process.env.ALLOWED_ORIGIN,
+		credentials: true
+  },
   typeDefs,
   resolvers,
   context: ({ req }) => {
